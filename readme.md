@@ -137,10 +137,9 @@ And there goes task queue. Our runtime declares asyncronous code in call stack, 
 We can define Event Loop, very primitive, like this:
 
 ```json
-Event Loop
 {
-  callStack: [],
-  taskQueue: []
+  "callStack": [],
+  "taskQueue": []
 }
 ```
 
@@ -161,50 +160,45 @@ sayHelloAndBye('Alex');
 At the first step of our little program interpretetion, loop will look like this:
 
 ```json
-Event Loop
 {
-  callStack: [sayHelloAndBye('Alex')],
-  taskQueue: [],
+  "callStack": ["sayHelloAndBye('Alex')"],
+  "taskQueue": [],
 }
 ```
 
 Then, it will see, that we have `setTimeout` call and push it to queue:
 
 ```json
-Event Loop
 {
-  callStack: [sayHelloAndBye('Alex')],
-  taskQueue: [setTimeout(hello)],
+  "callStack": ["sayHelloAndBye('Alex')"],
+  "taskQueue": ["setTimeout(hello)"],
 }
 ```
 
 His next step will be pushing our "bye" `console.log` to callStack:
 
 ```json
-Event Loop
 {
-  callStack: [sayHelloAndBye('Alex'), console.log('Bye, Alex!')],
-  taskQueue: [setTimeout(hello)],
+  "callStack": ["sayHelloAndBye('Alex')", "console.log('Bye, Alex!')"],
+  "taskQueue": ["setTimeout(hello)"],
 }
 ```
 
 Then, our "bye" log will be executed and popped-out of stack, but here's the thing - `sayHelloAndBye('Alex')` will be popped out as well, cause function body has no more instructions and there's no need to keep this function in stack:
 
 ```json
-Event Loop
 {
-  callStack: [],
-  taskQueue: [setTimeout(hello)],
+  "callStack": [],
+  "taskQueue": ["setTimeout(hello)"],
 }
 ```
 
 When callStack will be empty, our taskQueue will be executed, but there's a nuance - we have synchronous code in setTimeout, so here's how it'll be look like(and yeah, we assumed, that 2 seconds have passed):
 
 ```json
-Event Loop
 {
-  callStack: [hello(), console.log('Hello, Alex!')],
-  taskQueue: [],
+  "callStack": ["hello()", "console.log('Hello, Alex!')"],
+  "taskQueue": [],
 }
 ```
 
