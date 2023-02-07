@@ -2,10 +2,6 @@
 
 - [Tricky JS Questions](#tricky-js-questions)
   - [JavaScript Core](#javascript-core)
-    - [Event loop](#event-loop)
-      - [Sync code](#sync-code)
-      - [Async code](#async-code)
-        - [Micro-tasks and macro-tasks](#micro-tasks-and-macro-tasks)
     - [Closures under the hood](#closures-under-the-hood)
     - [Prototype inheritance](#prototype-inheritance)
     - [`this` keyword](#this-keyword)
@@ -14,6 +10,10 @@
       - [Constructor-functions](#constructor-functions)
       - [Object method](#object-method)
       - [call, bind, apply usages](#call-bind-apply-usages)
+    - [Event Loop](#event-loop)
+      - [Sync code](#sync-code)
+      - [Async code](#async-code)
+        - [Micro-tasks and macro-tasks](#micro-tasks-and-macro-tasks)
     - [Promise API](#promise-api)
       - [States](#states)
       - [Methods](#methods)
@@ -26,9 +26,89 @@
 
 ## JavaScript Core
 
-### Event loop
+### Closures under the hood
 
-JavaScript is syncronous or one-threaded programming language. It means that it can execute one comand after another. Pretty simple concept, right? But what if we need to execute come code with delay? Here comes the Event loop. In JavaScript runtime we have a call stack and a task queue, where our JS runtime put our function calls. Let's take a look how it works for a syncronous code
+### Prototype inheritance
+
+### `this` keyword
+
+ `this` - pointer to some object. Pretty tricky thing cause its value depends on invocation context. Contexts are:
+
+- classic function declaration
+- constructor-functions
+- object method
+- arrow functions
+- call, bind and apply usages
+
+#### Classic function declaration
+
+ It's pretty simple. `this` equals global object: window in browser and global in Node environment. Also, if function body annotated with `'use strict'` – `this` equals `undefined`. And it cascades into inner functions, even if inner function is an arrow one
+
+ ```javascript
+ function f() {
+  console.log(this);
+ }
+
+ f(); // window or global
+
+ function s() {
+  'use strict'
+  console.log(this);
+ }
+
+ s(); // undefined
+ ```
+
+#### arrow functions
+
+Arrow function hasn't its own context, instead they take closest `this` value from outer hirerachy.
+
+```javascript
+const f = () => {
+  console.log(this);
+};
+
+f(); // logs Window in browser
+
+const user = { user: '123' };
+
+f.call(user);
+
+f(); // still Window
+```
+
+#### Constructor-functions
+
+ `this` equals instance of a class/new object. In-depth, when constructor called `this` is an empty object, but when we assign some values to new object instance `this` will have them too, cause it is an instance of this object/class
+
+ ```javascript
+ function A(name) {
+  console.log(this);
+  this.name = name;
+  console.log(this);
+ }
+
+ const a = new A('John');
+ // first log: Object {}
+ // second log: Object { name: 'John' }
+ ```
+
+#### Object method
+
+In objects that contains some method the value of `this` is an object itself. But, there's a trick. If we, let's say set an object method to a variable, then `this` will be same as in classic function declaration.
+
+#### call, bind, apply usages
+
+- `call`, `apply`
+
+  `call` and `apply` require `this` as first argument to call some function with some scope. The only difference between them is how they take other arguments: `call` takes arguments comma-separated, `apply` takes them as an array
+
+- `bind`
+  As it comes from the name, `bind` binds `this` value and some method or function. It doesn't executes function, but creates a new one with some context
+
+### Event Loop
+
+JavaScript is syncronous or one-threaded programming language. It means that it can execute one comand after another. Pretty simple concept, right? But what if we need to execute come code with delay? Here comes the Event Loop. In JavaScript runtime we have a call stack and a task queue, where our JS runtime put our function calls. Let's take a look how it works for a syncronous code
 
 #### Sync code
 
@@ -166,86 +246,6 @@ requestAnimationFrame(() => console.log('requestAnimationFrame'));
     That's because Event Loop have strict order of execution. The first one is syncronous code, then goes async micro-tasks(Promises), and the last ones are macro-tasks(Web APIs).
   </p>
 </details>
-
-### Closures under the hood
-
-### Prototype inheritance
-
-### `this` keyword
-
- `this` - pointer to some object. Pretty tricky thing cause its value depends on invocation context. Contexts are:
-
-- classic function declaration
-- constructor-functions
-- object method
-- arrow functions
-- call, bind and apply usages
-
-#### Classic function declaration
-
- It's pretty simple. `this` equals global object: window in browser and global in Node environment. Also, if function body annotated with `'use strict'` – `this` equals `undefined`. And it cascades into inner functions, even if inner function is an arrow one
-
- ```javascript
- function f() {
-  console.log(this);
- }
-
- f(); // window or global
-
- function s() {
-  'use strict'
-  console.log(this);
- }
-
- s(); // undefined
- ```
-
-#### arrow functions
-
-Arrow function hasn't its own context, instead they take closest `this` value from outer hirerachy.
-
-```javascript
-const f = () => {
-  console.log(this);
-};
-
-f(); // logs Window in browser
-
-const user = { user: '123' };
-
-f.call(user);
-
-f(); // still Window
-```
-
-#### Constructor-functions
-
- `this` equals instance of a class/new object. In-depth, when constructor called `this` is an empty object, but when we assign some values to new object instance `this` will have them too, cause it is an instance of this object/class
-
- ```javascript
- function A(name) {
-  console.log(this);
-  this.name = name;
-  console.log(this);
- }
-
- const a = new A('John');
- // first log: Object {}
- // second log: Object { name: 'John' }
- ```
-
-#### Object method
-
-In objects that contains some method the value of `this` is an object itself. But, there's a trick. If we, let's say set an object method to a variable, then `this` will be same as in classic function declaration.
-
-#### call, bind, apply usages
-
-- `call`, `apply`
-
-  `call` and `apply` require `this` as first argument to call some function with some scope. The only difference between them is how they take other arguments: `call` takes arguments comma-separated, `apply` takes them as an array
-
-- `bind`
-  As it comes from the name, `bind` binds `this` value and some method or function. It doesn't executes function, but creates a new one with some context
 
 ### Promise API
 
