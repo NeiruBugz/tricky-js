@@ -2,11 +2,6 @@
 
 - [Tricky JS Questions](#tricky-js-questions)
   - [JavaScript Core](#javascript-core)
-    - [Event loop](#event-loop)
-      - [Sync code](#sync-code)
-      - [Async code](#async-code)
-        - [Micro-tasks](#micro-tasks)
-        - [Macro-tasks](#macro-tasks)
     - [Closures under the hood](#closures-under-the-hood)
     - [Prototype inheritance](#prototype-inheritance)
     - [`this` keyword](#this-keyword)
@@ -15,6 +10,10 @@
       - [Constructor-functions](#constructor-functions)
       - [Object method](#object-method)
       - [call, bind, apply usages](#call-bind-apply-usages)
+    - [Event Loop](#event-loop)
+      - [Sync code](#sync-code)
+      - [Async code](#async-code)
+        - [Micro-tasks and macro-tasks](#micro-tasks-and-macro-tasks)
     - [Promise API](#promise-api)
       - [States](#states)
       - [Methods](#methods)
@@ -26,16 +25,6 @@
     - [TypeScript Utility types](#typescript-utility-types)
 
 ## JavaScript Core
-
-### Event loop
-
-#### Sync code
-
-#### Async code
-
-##### Micro-tasks
-
-##### Macro-tasks
 
 ### Closures under the hood
 
@@ -116,6 +105,141 @@ In objects that contains some method the value of `this` is an object itself. Bu
 
 - `bind`
   As it comes from the name, `bind` binds `this` value and some method or function. It doesn't executes function, but creates a new one with some context
+
+### Event Loop
+
+JavaScript is syncronous or one-threaded programming language. It means that it can execute one comand after another. Pretty simple concept, right? But what if we need to execute come code with delay? Here comes the Event Loop. In JavaScript runtime we have a call stack and a task queue, where our JS runtime put our function calls. Let's take a look how it works for a syncronous code
+
+#### Sync code
+
+For example, we have this lines of code:
+
+```javascript
+function hello(name) {
+  console.log(`Hello, ${name}!`);
+}
+
+hello('Alex');
+hello('John');
+hello('Jane');
+```
+
+And our call stack looks like this:
+`[hello('Alex'), hello('John'), hello('Jane')]`
+The first call will be `hello('Jane')`, because stack is LIFO-structure and when it's called our stack will look like this:
+`[hello('Alex'), hello('John')]`
+Pretty simple concept, right? Now, let's take a look at asyncronous code.
+
+#### Async code
+
+And there goes task queue. Our runtime declares asyncronous code in call stack, but let's say, implementation of it put in task queue, so stack knows, that there is an instruction to execute, but we cant execute it right now, because it is in a queue.
+
+We can define Event Loop, very primitive, like this:
+
+```json
+{
+  "callStack": [],
+  "taskQueue": []
+}
+```
+
+Here's simple example:
+
+```javascript
+function sayHelloAndBye(name) {
+  setTimeout(function hello() {
+    console.log(`Hello, ${name}!`);
+  }, 2000);
+
+  console.log(`Bye, ${name}`);
+}
+
+sayHelloAndBye('Alex');
+```
+
+At the first step of our little program interpretetion, loop will look like this:
+
+```json
+{
+  "callStack": ["sayHelloAndBye('Alex')"],
+  "taskQueue": [],
+}
+```
+
+Then, it will see, that we have `setTimeout` call and push it to queue:
+
+```json
+{
+  "callStack": ["sayHelloAndBye('Alex')"],
+  "taskQueue": ["setTimeout(hello)"],
+}
+```
+
+His next step will be pushing our "bye" `console.log` to callStack:
+
+```json
+{
+  "callStack": ["sayHelloAndBye('Alex')", "console.log('Bye, Alex!')"],
+  "taskQueue": ["setTimeout(hello)"],
+}
+```
+
+Then, our "bye" log will be executed and popped-out of stack, but here's the thing - `sayHelloAndBye('Alex')` will be popped out as well, cause function body has no more instructions and there's no need to keep this function in stack:
+
+```json
+{
+  "callStack": [],
+  "taskQueue": ["setTimeout(hello)"],
+}
+```
+
+When callStack will be empty, our taskQueue will be executed, but there's a nuance - we have synchronous code in setTimeout, so here's how it'll be look like(and yeah, we assumed, that 2 seconds have passed):
+
+```json
+{
+  "callStack": ["hello()", "console.log('Hello, Alex!')"],
+  "taskQueue": [],
+}
+```
+
+Then it runs `console.log`, pop-out `hello()` and our Event Loop will be empty again. Of course, it's a very simple explanation of such big mechanism as Event Loop, but it works just like that.
+
+##### Micro-tasks and macro-tasks
+
+But why it's working like that? Well, we have tasks and they are pushed into taskqueue, but how define task? Here's a short answer. Things like `setTimeout`, `setInterval`, `requestAnimationFrame`, etc. are APIs(Web API) that browser gives us. They are called macro-tasks.
+
+And there are micro-tasks. They are a part of JavaScript and completely controlled from our code(`Promises` for example). Let's take a look at example. Here we have a couple synchronous commands, a Promise and a bunch of Web APIs usage. Try to order `console.log` in order of execution.
+
+```javascript
+console.log('log 1');
+setTimeout(() => console.log('timeout 1'));
+setTimeout(() => console.log('timeout 2'), 0);
+Promise.resolve()
+  .then(() => console.log('promise 1'))
+  .then(() => console.log('promise 2'))
+  .then(() => console.log('promise 3'));
+console.log('log 2');
+setTimeout(() => console.log('timeout 3'), 2000);
+requestAnimationFrame(() => console.log('requestAnimationFrame'));
+```
+
+<details>
+  <summary>Answer</summary>
+  <ol>
+    <li>log 1</li>
+    <li>log 2</li>
+    <li>promise 1</li>
+    <li>promise 2</li>
+    <li>promise 3</li>
+    <li>timeout 1</li>
+    <li>timeout 2</li>
+    <li>requestAnimationFrame</li>
+    <li>timeout3</li>
+  </ol>
+  <p>
+    That's because Event Loop have strict order of execution. The first one is syncronous code, then goes async micro-tasks(Promises), and the last ones are macro-tasks(Web APIs).
+  </p>
+</details>
 
 ### Promise API
 
